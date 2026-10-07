@@ -6,9 +6,11 @@ import '../features/applications/application_detail_screen.dart';
 import '../features/databases/database_detail_screen.dart';
 import '../features/deployments/deployment_detail_screen.dart';
 import '../features/deployments/deployments_screen.dart';
+import '../features/deployments/application_deployments_screen.dart';
 import '../features/instances/instance_edit_screen.dart';
 import '../features/instances/instances_screen.dart';
 import '../features/projects/project_detail_screen.dart';
+import '../features/projects/environment_detail_screen.dart';
 import '../features/projects/projects_screen.dart';
 import '../features/resources/resources_screen.dart';
 import '../features/servers/server_detail_screen.dart';
@@ -19,6 +21,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/shell/shell_screen.dart';
 import '../features/tags/tags_screen.dart';
+import '../core/models/environment.dart';
 import '../core/providers.dart';
 import '../shared/widgets/sections.dart';
 
@@ -84,6 +87,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/applications/:uuid/deployments',
+        builder: (_, state) => ApplicationDeploymentsScreen(
+          uuid: state.pathParameters['uuid']!,
+        ),
+      ),
+      GoRoute(
         path: '/databases/:uuid',
         builder: (_, state) => DatabaseDetailScreen(
           uuid: state.pathParameters['uuid']!,
@@ -115,6 +124,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/projects/:uuid',
         builder: (_, state) => ProjectDetailScreen(
           uuid: state.pathParameters['uuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/projects/:uuid/env/:envid',
+        builder: (_, state) => EnvironmentDetailScreen(
+          environment: state.extra as Environment,
         ),
       ),
       GoRoute(

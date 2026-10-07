@@ -104,26 +104,50 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  Column(
                     children: [
-                      _StatCard(scheme, Icons.dns_outlined, servers, 'Servers',
-                          () => context.go('/servers')),
-                      _StatCard(scheme, Icons.folder_outlined, projects, 'Projects',
-                          () => context.push('/projects')),
-                      _StatCard(scheme, Icons.web_asset, apps, 'Apps',
-                          () => context.go('/resources')),
-                      _StatCard(scheme, Icons.storage, dbs, 'Databases',
-                          () => context.go('/resources')),
-                      _StatCard(scheme, Icons.layers, svcs, 'Services',
-                          () => context.go('/resources')),
-                      _StatCard(
-                          scheme,
-                          Icons.rocket_launch_outlined,
-                          running?.length ?? 0,
-                          'Deploying',
-                          () => context.go('/deployments')),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(scheme, Icons.dns_outlined, servers,
+                                'Servers', () => context.go('/servers')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _StatCard(scheme, Icons.folder_outlined,
+                                projects, 'Projects',
+                                () => context.push('/projects')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _StatCard(scheme, Icons.web_asset, apps,
+                                'Apps', () => context.go('/resources')),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(scheme, Icons.storage, dbs,
+                                'Databases', () => context.go('/resources')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _StatCard(scheme, Icons.layers, svcs,
+                                'Services', () => context.go('/resources')),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _StatCard(
+                                scheme,
+                                Icons.rocket_launch_outlined,
+                                running?.length ?? 0,
+                                'Deploying',
+                                () => context.go('/deployments')),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -171,7 +195,6 @@ class _StatCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: (MediaQuery.sizeOf(context).width - 48) / 3,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),

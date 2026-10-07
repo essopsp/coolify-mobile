@@ -8,6 +8,7 @@ import '../../shared/widgets/async_view.dart';
 import '../../shared/widgets/sections.dart';
 import '../../shared/widgets/status_chip.dart';
 import '../detail_providers.dart';
+import '../deployments/application_deployments_screen.dart';
 import '../deployments/deployment_detail_screen.dart';
 import '../deployments/deployments_provider.dart';
 import '../deployments/widgets.dart';
@@ -87,7 +88,9 @@ class _ApplicationDetailScreenState
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: Column(
+      body: DefaultTabController(
+        length: 4,
+        child: Column(
         children: [
           if (app != null)
             SizedBox(
@@ -137,6 +140,7 @@ class _ApplicationDetailScreenState
               0 => _OverviewTab(
                   appAsync: appAsync,
                   deployments: deployments,
+                  uuid: widget.uuid,
                 ),
               1 => EnvVarsTab(
                   resource: 'application',
@@ -155,6 +159,7 @@ class _ApplicationDetailScreenState
             },
           ),
         ],
+        ),
       ),
     );
   }
@@ -194,10 +199,15 @@ class _BarAction extends StatelessWidget {
 }
 
 class _OverviewTab extends ConsumerWidget {
-  const _OverviewTab({required this.appAsync, required this.deployments});
+  const _OverviewTab({
+    required this.appAsync,
+    required this.deployments,
+    required this.uuid,
+  });
 
   final AsyncValue<Application> appAsync;
   final AsyncValue<List<Deployment>> deployments;
+  final String uuid;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -274,6 +284,23 @@ class _OverviewTab extends ConsumerWidget {
             else
               for (final d in deployments.value!.take(8))
                 DeploymentTile(deployment: d),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => Navigator.of(context, rootNavigator: true)
+                      .push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ApplicationDeploymentsScreen(uuid: uuid),
+                    ),
+                  ),
+                  icon: const Icon(Icons.history, size: 16),
+                  label: const Text('View full history'),
+                ),
+              ),
+            ),
             const SizedBox(height: 8),
           ],
         );

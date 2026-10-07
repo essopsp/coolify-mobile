@@ -50,7 +50,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             Tab(text: 'Environments (${p.environments.length})'),
             const Tab(text: 'Resources'),
           ];
-          return Column(
+          return DefaultTabController(
+            length: 2,
+            child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -104,6 +106,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 },
               ),
             ],
+            ),
           );
         },
       ),
@@ -139,7 +142,7 @@ class _EnvsList extends StatelessWidget {
             subtitle: Text(e.description ?? e.uuid ?? ''),
             onTap: () {
               context.push(
-                '/projects/$projectUuid/env/${e.name ?? e.uuid}',
+                '/projects/$projectUuid/env/${e.uuid ?? e.name}',
                 extra: e,
               );
             },

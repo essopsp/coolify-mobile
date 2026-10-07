@@ -92,7 +92,9 @@ class _ServerDetailScreenState extends ConsumerState<ServerDetailScreen> {
         value: server,
         onRefresh: _refresh,
         builder: (context, s) {
-          return Column(
+          return DefaultTabController(
+            length: 4,
+            child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
@@ -142,6 +144,7 @@ class _ServerDetailScreenState extends ConsumerState<ServerDetailScreen> {
                 },
               ),
             ],
+            ),
           );
         },
       ),
