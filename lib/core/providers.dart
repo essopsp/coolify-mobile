@@ -110,3 +110,7 @@ final activeInstanceProvider = Provider<CoolifyInstance?>(
 final auditEventsProvider = FutureProvider<List<AuditEvent>>((ref) {
   return ref.watch(apiProvider).auditEvents();
 });
+
+final teamMembersProvider = FutureProvider<List<TeamMember>>((ref) {
+  return ref.watch(apiProvider).teamMembers();
+});

@@ -65,6 +65,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
+          SectionHeader('Rights'),
+          AsyncView<List<TeamMember>>(
+            value: ref.watch(teamMembersProvider),
+            onRefresh: () async {
+              ref.invalidate(teamMembersProvider);
+              await ref.read(teamMembersProvider.future);
+            },
+            builder: (context, members) => Card(
+              child: Column(
+                children: members
+                    .map(
+                      (m) => ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                        title: Text(m.name ?? m.email ?? '(member)',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(m.email ?? ''),
+                        trailing: Text(
+                          m.isOwner == true
+                              ? 'Owner'
+                              : m.role ?? 'member',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ),
           SectionHeader('General'),
           Card(
             child: Column(

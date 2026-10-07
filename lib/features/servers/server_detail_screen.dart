@@ -322,12 +322,20 @@ class _ServerDomains extends ConsumerWidget {
           itemCount: list.length,
           separatorBuilder: (_, _) => const SizedBox(height: 4),
           itemBuilder: (context, i) {
-            final d = domains.value![i];
+            final d = list[i];
             return Card(
               child: ListTile(
                 leading: const Icon(Icons.language),
-                title: Text(d.domain ?? '—'),
-                subtitle: Text(d.type ?? '—'),
+                title: Text(d.resourceName ?? '—',
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                  [
+                    if (d.resourceType != null) d.resourceType!,
+                    ...?d.domains,
+                  ].join(' · '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             );
           },
@@ -346,34 +354,59 @@ class _CleanupTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cleanup = ref.watch(serverCleanupProvider(uuid));
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text('Docker cleanup',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              InfoRow('Containers', cleanup.value?['containers']?.toString() ?? '…'),
-              InfoRow('Images', cleanup.value?['images']?.toString() ?? '…'),
-              InfoRow('Networks', cleanup.value?['networks']?.toString() ?? '…'),
-              InfoRow('Volumes', cleanup.value?['volumes']?.toString() ?? '…'),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: FilledButton.icon(
-                  onPressed: onRun,
-                  icon: const Icon(Icons.cleaning_services),
-                  label: const Text('Run cleanup now'),
-                ),
-              ),
-            ],
+        final data = cleanup.value ?? const <String, dynamic>{};
+        final rows = <Widget>[
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text('Docker cleanup',
+                style: TextStyle(fontWeight: FontWeight.w600)),
           ),
-        ),
-      ],
-    );
+        ];
+        if (data.isEmpty) {
+          rows.add(const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text('No data returned for this server yet.',
+                style: TextStyle(color: Colors.white54)),
+          ));
+        } else if (data.containsKey('containers') ||
+            data.containsKey('images')) {
+          rows.addAll([
+            InfoRow('Containers', _cleanupValue(data['containers'])),
+            InfoRow('Images', _cleanupValue(data['images'])),
+            InfoRow('Networks', _cleanupValue(data['networks'])),
+            InfoRow('Volumes', _cleanupValue(data['volumes'])),
+          ]);
+        } else {
+          for (final entry in data.entries) {
+            rows.add(InfoRow(entry.key, _cleanupValue(entry.value)));
+          }
+        }
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: FilledButton.icon(
+              onPressed: onRun,
+              icon: const Icon(Icons.cleaning_services),
+              label: const Text('Run cleanup now'),
+            ),
+          ),
+        );
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: rows,
+              ),
+            ),
+          ],
+        );
   }
+}
+String _cleanupValue(dynamic v) {
+  if (v == null) return '…';
+  if (v is List) return '${v.length} items';
+  if (v is Map) return '${v.length} entries';
+  return v.toString();
 }

@@ -37,7 +37,8 @@ class DashboardScreen extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: RefreshIndicator(
+      body: SafeArea(
+        child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(resourcesProvider);
           ref.invalidate(runningDeploymentsProvider);
@@ -175,6 +176,7 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

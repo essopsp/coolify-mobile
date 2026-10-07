@@ -526,8 +526,9 @@ class CoolifyApi {
 
   Future<List<ServerDomain>> serverDomains(String uuid) async {
     final data = await _client.get('/servers/$uuid/domains');
-    if (data is! List) return const [];
-    return data
+    final list = data is Map ? data['domains'] : data;
+    if (list is! List) return const [];
+    return list
         .map((e) => ServerDomain.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }

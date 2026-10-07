@@ -139,18 +139,25 @@ class ServerResource {
 }
 
 class ServerDomain {
-  const ServerDomain({this.domain, this.type, this.caddyRemote, this.isTraefik});
+  const ServerDomain({
+    this.resourceType,
+    this.resourceUuid,
+    this.resourceName,
+    this.domains,
+  });
 
-  final String? domain;
-  final String? type;
-  final bool? caddyRemote;
-  final bool? isTraefik;
+  final String? resourceType;
+  final String? resourceUuid;
+  final String? resourceName;
+  final List<String>? domains;
 
   factory ServerDomain.fromJson(Map<String, dynamic> m) => ServerDomain(
-        domain: jsonStr(m, 'domain'),
-        type: jsonStr(m, 'type'),
-        caddyRemote: jsonBool(m, 'caddy_remote'),
-        isTraefik: jsonBool(m, 'is_traefik'),
+        resourceType: jsonStr(m, 'resource_type'),
+        resourceUuid: jsonStr(m, 'resource_uuid'),
+        resourceName: jsonStr(m, 'resource_name'),
+        domains: m['domains'] is List
+            ? (m['domains'] as List).whereType<String>().toList()
+            : null,
       );
 }
 
