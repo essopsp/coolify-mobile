@@ -9,6 +9,7 @@ import '../models/service.dart';
 import '../models/tag.dart';
 import '../models/team.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
 /// Typed facade over the Coolify REST API (v1).
 class CoolifyApi {
@@ -18,6 +19,15 @@ class CoolifyApi {
 
   static String stripJsonScheme(String s) =>
       s.replaceFirst('json://', '').replaceFirst('json+ssh://', '');
+
+  /// The public API uses plural resource segments.
+  static String _resourcePlural(String resource) => switch (resource) {
+        'application' => 'applications',
+        'database' || 'databaseProxy' => 'databases',
+        'service' => 'services',
+        'server' => 'servers',
+        _ => resource,
+      };
 
   // ── System / health ────────────────────────────────────────────────────────
   Future<String> version() async {
@@ -42,11 +52,21 @@ class CoolifyApi {
   }
 
   Future<List<AuditEvent>> auditEvents() async {
-    final data = await _client.get('/audit-events');
-    if (data is! List) return const [];
-    return data
-        .map((e) => AuditEvent.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    try {
+      final data = await _client.get('/audit-events');
+      if (data is! List) return const [];
+      return data
+          .map((e) => AuditEvent.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on ApiException catch (e) {
+      if (e.kind == ApiErrorKind.notFound) {
+        throw const ApiException(
+          ApiErrorKind.notFound,
+          'This Coolify version does not expose audit events via the public API (v1).',
+        );
+      }
+      rethrow;
+    }
   }
 
   // ── Projects ───────────────────────────────────────────────────────────────
@@ -156,7 +176,7 @@ class CoolifyApi {
     bool force = false,
     bool confirmStopped = false,
   }) async {
-    final path = '/$resource/$uuid/$action';
+    final path = '/${_resourcePlural(resource)}/$uuid/$action';
     final data = action == 'stop'
         ? await _client.post(path, query: {'confirm': true}, body: {})
         : await _client.post(path, query: {'force': force}, body: {});
@@ -200,7 +220,7 @@ class CoolifyApi {
     final data = resource == 'service'
         ? await _client.post('/services/$uuid/restart',
             query: {'force': force}, body: {})
-        : await _client.post('/$resource/$uuid/restart',
+        : await _client.post('/${_resourcePlural(resource)}/$uuid/restart',
             query: {'force': force}, body: {});
     return _msg(data);
   }
@@ -258,7 +278,7 @@ class CoolifyApi {
 
   // ── Env vars ───────────────────────────────────────────────────────────────
   Future<List<EnvVar>> envVars(String resource, String uuid) async {
-    final data = await _client.get('/$resource/$uuid/envs');
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/envs');
     if (data is! List) return const [];
     return data
         .map((e) => EnvVar.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -273,7 +293,7 @@ class CoolifyApi {
     bool buildTime = false,
     bool preview = false,
   }) async {
-    final data = await _client.post('/$resource/$uuid/envs', body: {
+    final data = await _client.post('/${_resourcePlural(resource)}/$uuid/envs', body: {
       'key': key,
       'value': ?value,
       'is_build_time': buildTime,
@@ -290,7 +310,7 @@ class CoolifyApi {
     bool buildTime = false,
     bool preview = false,
   }) async {
-    final data = await _client.patch('/$resource/$uuid/envs/bulk', body: [
+    final data = await _client.patch('/${_resourcePlural(resource)}/$uuid/envs/bulk', body: [
       {
         'key': key,
         'value': ?value,
@@ -302,7 +322,7 @@ class CoolifyApi {
   }
 
   Future<MessageResult> deleteEnvVar(String resource, String uuid, String envUuid) async {
-    final data = await _client.delete('/$resource/$uuid/envs/$envUuid');
+    final data = await _client.delete('/${_resourcePlural(resource)}/$uuid/envs/$envUuid');
     return _msg(data);
   }
 
@@ -314,7 +334,7 @@ class CoolifyApi {
     bool timestamps = false,
     String? serviceName,
   }) async {
-    final data = await _client.get('/$resource/$uuid/logs', query: {
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/logs', query: {
       'lines': lines,
       'show_timestamps': timestamps,
       if (serviceName != null && serviceName.isNotEmpty) 'service_name': serviceName,
@@ -391,7 +411,7 @@ class CoolifyApi {
   }
 
   Future<List<Tag>> resourceTags(String resource, String uuid) async {
-    final data = await _client.get('/$resource/$uuid/tags');
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/tags');
     if (data is Map<String, dynamic>) {
       return data['tags'] is List
           ? (data['tags'] as List)
@@ -412,7 +432,7 @@ class CoolifyApi {
     String uuid,
     String tagUuid,
   ) async {
-    final data = await _client.post('/$resource/$uuid/tags',
+    final data = await _client.post('/${_resourcePlural(resource)}/$uuid/tags',
         body: {'tag_uuid': tagUuid});
     return _msg(data);
   }
@@ -422,13 +442,13 @@ class CoolifyApi {
     String uuid,
     String tagUuid,
   ) async {
-    final data = await _client.delete('/$resource/$uuid/tags/$tagUuid');
+    final data = await _client.delete('/${_resourcePlural(resource)}/$uuid/tags/$tagUuid');
     return _msg(data);
   }
 
   // ── Scheduled tasks ────────────────────────────────────────────────────────
   Future<List<ScheduledTask>> tasks(String resource, String uuid) async {
-    final data = await _client.get('/$resource/$uuid/scheduled-tasks');
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/scheduled-tasks');
     if (data is! List) return const [];
     return data
         .map((e) => ScheduledTask.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -442,7 +462,7 @@ class CoolifyApi {
     required String command,
     required String frequency,
   }) async {
-    final data = await _client.post('/$resource/$uuid/scheduled-tasks', body: {
+    final data = await _client.post('/${_resourcePlural(resource)}/$uuid/scheduled-tasks', body: {
       'name': name,
       'command': command,
       'frequency': frequency,
@@ -451,12 +471,12 @@ class CoolifyApi {
   }
 
   Future<MessageResult> deleteTask(String resource, String uuid, String taskUuid) async {
-    final data = await _client.delete('/$resource/$uuid/scheduled-tasks/$taskUuid');
+    final data = await _client.delete('/${_resourcePlural(resource)}/$uuid/scheduled-tasks/$taskUuid');
     return _msg(data);
   }
 
   Future<MessageResult> executeTask(String resource, String uuid, String taskUuid) async {
-    final data = await _client.post('/$resource/$uuid/scheduled-tasks/$taskUuid/execute');
+    final data = await _client.post('/${_resourcePlural(resource)}/$uuid/scheduled-tasks/$taskUuid/execute');
     return _msg(data);
   }
 
@@ -465,7 +485,7 @@ class CoolifyApi {
     String uuid,
     String taskUuid,
   ) async {
-    final data = await _client.get('/$resource/$uuid/scheduled-tasks/$taskUuid/executions');
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/scheduled-tasks/$taskUuid/executions');
     if (data is! List) return const [];
     return data
         .map((e) => TaskExecution.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -474,7 +494,7 @@ class CoolifyApi {
 
   // ── Storages ───────────────────────────────────────────────────────────────
   Future<List<Storage>> storages(String resource, String uuid) async {
-    final data = await _client.get('/$resource/$uuid/storages');
+    final data = await _client.get('/${_resourcePlural(resource)}/$uuid/storages');
     if (data is! List) return const [];
     return data
         .map((e) => Storage.fromJson(Map<String, dynamic>.from(e as Map)))
