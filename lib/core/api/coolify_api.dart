@@ -3,6 +3,7 @@ import '../models/coolify_instance.dart';
 import '../models/database.dart';
 import '../models/deployment.dart';
 import '../models/environment.dart';
+import '../models/github_app.dart';
 import '../models/resource.dart';
 import '../models/server.dart';
 import '../models/service.dart';
@@ -164,6 +165,91 @@ class CoolifyApi {
     return data
         .map((e) => ServiceDatabase.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
+  }
+
+  // ── Create resources ───────────────────────────────────────────────────────
+  Future<List<GithubApp>> githubApps() async {
+    final data = await _client.get('/github-apps');
+    if (data is! List) return const [];
+    return data
+        .map((e) => GithubApp.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<List<GithubRepository>> githubRepositories(String githubAppUuid) async {
+    final data = await _client.get('/github-apps/$githubAppUuid/repositories');
+    final list = data is Map ? data['repositories'] : data;
+    if (list is! List) return const [];
+    return list
+        .map((e) => GithubRepository.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<List<GithubBranch>> githubBranches(
+    String githubAppUuid,
+    String owner,
+    String repo,
+  ) async {
+    final data =
+        await _client.get('/github-apps/$githubAppUuid/repositories/$owner/$repo/branches');
+    final list = data is Map ? data['branches'] : data;
+    if (list is! List) return const [];
+    return list
+        .map((e) => GithubBranch.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  /// Creates an application from the selected GitHub repository.
+  /// Returns the new application's uuid.
+  Future<String> createApplicationFromGithub({
+    required String projectUuid,
+    required String environmentUuid,
+    required String serverUuid,
+    required String githubAppUuid,
+    required String gitRepository,
+    required String gitBranch,
+    required String buildPack,
+    String? name,
+    bool instantDeploy = true,
+  }) async {
+    final data = await _client.post('/applications/private-github-app', body: {
+      'project_uuid': projectUuid,
+      'environment_uuid': environmentUuid,
+      'server_uuid': serverUuid,
+      'github_app_uuid': githubAppUuid,
+      'git_repository': gitRepository,
+      'git_branch': gitBranch,
+      'build_pack': buildPack,
+      'name': ?name,
+      'instant_deploy': instantDeploy,
+    });
+    if (data is Map<String, dynamic> && data['uuid'] is String) {
+      return data['uuid'] as String;
+    }
+    throw ApiException(ApiErrorKind.badRequest, 'Create application failed');
+  }
+
+  /// Creates a one-click service by type. Returns the new service's uuid.
+  Future<String> createService({
+    required String type,
+    required String projectUuid,
+    required String environmentUuid,
+    required String serverUuid,
+    String? name,
+    bool instantDeploy = true,
+  }) async {
+    final data = await _client.post('/services', body: {
+      'type': type,
+      'project_uuid': projectUuid,
+      'environment_uuid': environmentUuid,
+      'server_uuid': serverUuid,
+      'name': ?name,
+      'instant_deploy': instantDeploy,
+    });
+    if (data is Map<String, dynamic> && data['uuid'] is String) {
+      return data['uuid'] as String;
+    }
+    throw ApiException(ApiErrorKind.badRequest, 'Create service failed');
   }
 
   // ── Lifecycle actions ──────────────────────────────────────────────────────

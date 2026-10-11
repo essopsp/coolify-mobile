@@ -19,6 +19,7 @@ import '../features/services/service_detail_screen.dart';
 import '../features/settings/audit_events_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/create/create_resource_screen.dart';
 import '../features/shell/shell_screen.dart';
 import '../features/tags/tags_screen.dart';
 import '../core/models/environment.dart';
@@ -135,6 +136,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/tags',
         builder: (_, _) => const TagsScreen(),
+      ),
+      GoRoute(
+        path: '/new',
+        builder: (_, _) => const CreateResourceScreen(),
       ),
       GoRoute(
         path: '/audit',

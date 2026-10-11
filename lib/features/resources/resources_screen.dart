@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/models/resource.dart';
 import '../../shared/widgets/async_view.dart';
@@ -66,6 +67,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             tooltip: 'Refresh',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/new'),
+        icon: const Icon(Icons.add),
+        label: const Text('New'),
       ),
       body: Column(
         children: [

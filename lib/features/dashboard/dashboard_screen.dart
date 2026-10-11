@@ -154,6 +154,11 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
+                      FilledButton.icon(
+                        onPressed: () => context.push('/new'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('New resource'),
+                      ),
                       const Spacer(),
                       TextButton.icon(
                         onPressed: () => context.go('/deployments'),
