@@ -128,7 +128,6 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
       );
     }
     _syncDefaults(projects, servers ?? const []);
-    final project = _currentProject(projects);
     final serverList = servers ?? const <Server>[];
 
     return Padding(
@@ -147,23 +146,12 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
             ],
             onChanged: (v) => setState(() {
               _projectUuid = v;
-              final next = projects.firstWhere((p) => p.uuid == v);
-              _environmentUuid =
-                  next.environments.isEmpty ? null : next.environments.first.uuid;
+              _environmentUuid = null;
             }),
           ),
           const SizedBox(height: 12),
           _label('Environment'),
-          DropdownButtonFormField<String>(
-            initialValue: _environmentUuid,
-            isExpanded: true,
-            decoration: const InputDecoration(isDense: true),
-            items: [
-              for (final e in project.environments)
-                DropdownMenuItem(value: e.uuid!, child: Text(e.name ?? '(unnamed)')),
-            ],
-            onChanged: (v) => setState(() => _environmentUuid = v),
-          ),
+          _environmentPicker(),
           const SizedBox(height: 12),
           _label('Server'),
           DropdownButtonFormField<String>(
@@ -184,12 +172,7 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
   void _syncDefaults(List<Project> projects, List<Server> servers) {
     if (_projectUuid == null || !projects.any((p) => p.uuid == _projectUuid)) {
       _projectUuid = projects.first.uuid;
-    }
-    final project = _currentProject(projects);
-    if (_environmentUuid == null ||
-        !project.environments.any((e) => e.uuid == _environmentUuid)) {
-      _environmentUuid =
-          project.environments.isEmpty ? null : project.environments.first.uuid;
+      _environmentUuid = null;
     }
     if (servers.isNotEmpty &&
         (_serverUuid == null || !servers.any((s) => s.uuid == _serverUuid))) {
@@ -197,8 +180,53 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
     }
   }
 
-  Project _currentProject(List<Project> projects) =>
-      projects.firstWhere((p) => p.uuid == _projectUuid, orElse: () => projects.first);
+  /// Environments are not part of `GET /projects`; fetch the selected
+  /// project's detail to obtain them.
+  Widget _environmentPicker() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final full = ref.watch(projectProvider(_projectUuid!));
+        return full.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+          error: (e, _) => _errorCard(e),
+          data: (project) {
+            final envs = project.environments;
+            if (envs.isEmpty) {
+              return const Text(
+                'This project has no environments.',
+                style: TextStyle(fontSize: 12, color: Colors.white54),
+              );
+            }
+            if (_environmentUuid == null ||
+                !envs.any((e) => e.uuid == _environmentUuid)) {
+              _environmentUuid = envs.first.uuid;
+            }
+            return InputDecorator(
+              decoration: const InputDecoration(isDense: true),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  isDense: true,
+                  value: _environmentUuid,
+                  items: [
+                    for (final e in envs)
+                      DropdownMenuItem(
+                        value: e.uuid,
+                        child: Text(e.name ?? '(unnamed)'),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _environmentUuid = v),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   // ── GitHub tab ─────────────────────────────────────────────────────────────
   Widget _githubTab(AsyncValue<List<GithubApp>> ghApps) {
