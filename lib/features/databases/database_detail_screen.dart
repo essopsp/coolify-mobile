@@ -111,10 +111,12 @@ class _DatabaseDetailScreenState extends ConsumerState<DatabaseDetailScreen> {
                             envProvider: ref.watch(dbEnvVarsProvider(widget.uuid)),
                           ),
                         2 => LogsTab(
-                            logProvider: ref.watch(dbLogsProvider(widget.uuid)),
-                            onRefresh: () {
-                              ref.invalidate(dbLogsProvider(widget.uuid));
-                            },
+                            logsFor: (ref, q) => ref.watch(dbLogsProvider(
+                                LogQuery(
+                                    uuid: widget.uuid,
+                                    lines: q.lines,
+                                    timestamps: q.timestamps))),
+                            onRefresh: () => ref.invalidate(dbLogsProvider),
                           ),
                         _ => _BackupsTab(dbUuid: widget.uuid),
                       },

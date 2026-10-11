@@ -1,3 +1,4 @@
+import '../models/app_config.dart';
 import '../models/application.dart';
 import '../models/coolify_instance.dart';
 import '../models/database.dart';
@@ -211,6 +212,7 @@ class CoolifyApi {
     required String buildPack,
     String? name,
     bool instantDeploy = true,
+    AppConfig? config,
   }) async {
     final data = await _client.post('/applications/private-github-app', body: {
       'project_uuid': projectUuid,
@@ -222,6 +224,7 @@ class CoolifyApi {
       'build_pack': buildPack,
       'name': ?name,
       'instant_deploy': instantDeploy,
+      ...?config?.toCreateBody(),
     });
     if (data is Map<String, dynamic> && data['uuid'] is String) {
       return data['uuid'] as String;
@@ -237,6 +240,7 @@ class CoolifyApi {
     required String serverUuid,
     String? name,
     bool instantDeploy = true,
+    ServiceConfig? config,
   }) async {
     final data = await _client.post('/services', body: {
       'type': type,
@@ -245,11 +249,32 @@ class CoolifyApi {
       'server_uuid': serverUuid,
       'name': ?name,
       'instant_deploy': instantDeploy,
+      ...?config?.toPatchBody(),
     });
     if (data is Map<String, dynamic> && data['uuid'] is String) {
       return data['uuid'] as String;
     }
     throw ApiException(ApiErrorKind.badRequest, 'Create service failed');
+  }
+
+  /// PATCH /applications/{uuid} — updates build/runtime configuration.
+  Future<MessageResult> patchApplication(String uuid, AppConfig config) async {
+    final body = config.toPatchBody();
+    if (body.isEmpty) {
+      return const MessageResult(message: 'Nothing to update');
+    }
+    final data = await _client.patch('/applications/$uuid', body: body);
+    return _msg(data);
+  }
+
+  /// PATCH /services/{uuid} — updates service configuration.
+  Future<MessageResult> patchService(String uuid, ServiceConfig config) async {
+    final body = config.toPatchBody();
+    if (body.isEmpty) {
+      return const MessageResult(message: 'Nothing to update');
+    }
+    final data = await _client.patch('/services/$uuid', body: body);
+    return _msg(data);
   }
 
   // ── Lifecycle actions ──────────────────────────────────────────────────────

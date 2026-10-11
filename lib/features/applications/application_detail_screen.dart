@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/models/application.dart';
 import '../../core/models/deployment.dart';
@@ -35,7 +36,7 @@ class _ApplicationDetailScreenState
     ref.invalidate(applicationProvider(widget.uuid));
     ref.invalidate(appDeploymentsProvider(widget.uuid));
     if (_tab == 1) ref.invalidate(appEnvVarsProvider(widget.uuid));
-    if (_tab == 2) ref.invalidate(appLogsProvider((uuid: widget.uuid, service: null)));
+    if (_tab == 2) ref.invalidate(appLogsProvider(logQuery(widget.uuid)));
     await Future.wait([
       ref.read(applicationProvider(widget.uuid).future),
       ref.read(appDeploymentsProvider(widget.uuid).future),
@@ -86,6 +87,11 @@ class _ApplicationDetailScreenState
         title: Text(app?.name ?? 'Application'),
         actions: [
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: () => context.push('/applications/${widget.uuid}/settings'),
+            icon: const Icon(Icons.tune),
+            tooltip: 'Configuration',
+          ),
         ],
       ),
       body: DefaultTabController(
@@ -148,12 +154,9 @@ class _ApplicationDetailScreenState
                   envProvider: ref.watch(appEnvVarsProvider(widget.uuid)),
                 ),
               2 => LogsTab(
-                  logProvider: ref.watch(
-                      appLogsProvider((uuid: widget.uuid, service: null))),
-                  onRefresh: () async {
-                    ref.invalidate(
-                        appLogsProvider((uuid: widget.uuid, service: null)));
-                  },
+                  logsFor: (ref, q) => ref.watch(appLogsProvider(
+                      LogQuery(uuid: widget.uuid, lines: q.lines, timestamps: q.timestamps))),
+                  onRefresh: () => ref.invalidate(appLogsProvider),
                 ),
               _ => TasksTab(resource: 'application', uuid: widget.uuid),
             },

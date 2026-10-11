@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/models/resource.dart';
 import '../../core/models/service.dart';
@@ -8,6 +9,7 @@ import '../../shared/widgets/async_view.dart';
 import '../../shared/widgets/confirm.dart';
 import '../../shared/widgets/sections.dart';
 import '../../shared/widgets/status_chip.dart';
+import '../applications/app_logs_tab.dart';
 import '../applications/app_tasks_tab.dart';
 import '../detail_providers.dart';
 import '../resources/widgets.dart';
@@ -57,13 +59,18 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Service'), actions: [
         IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
+        IconButton(
+          onPressed: () => context.push('/services/${widget.uuid}/settings'),
+          icon: const Icon(Icons.tune),
+          tooltip: 'Configuration',
+        ),
       ]),
       body: AsyncView(
         value: svc,
         onRefresh: _refresh,
         builder: (context, s) {
           return DefaultTabController(
-            length: 4,
+            length: 5,
             child: Column(
             children: [
               Container(
@@ -100,6 +107,7 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
                   Tab(text: 'Applications'),
                   Tab(text: 'Databases'),
                   Tab(text: 'Tasks'),
+                  Tab(text: 'Logs'),
                 ],
               ),
               Expanded(
@@ -115,7 +123,16 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
                       onRefresh: _refresh,
                     ),
                   2 => _ServiceDbsList(dbs: dbs, serviceUuid: widget.uuid),
-                  _ => TasksTab(resource: 'service', uuid: widget.uuid),
+                  3 => TasksTab(resource: 'service', uuid: widget.uuid),
+                  _ => LogsTab(
+                      logsFor: (ref, q) => ref.watch(serviceContainerLogsProvider(
+                          LogQuery(
+                              uuid: widget.uuid,
+                              lines: q.lines,
+                              timestamps: q.timestamps))),
+                      onRefresh: () =>
+                          ref.invalidate(serviceContainerLogsProvider),
+                    ),
                 },
               ),
             ],

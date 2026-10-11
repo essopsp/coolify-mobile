@@ -3,6 +3,7 @@ import '../utils/status.dart';
 
 class Service {
   const Service({
+    this.raw = const {},
     this.uuid,
     this.name,
     this.status,
@@ -16,6 +17,9 @@ class Service {
     this.updatedAt,
     this.fqdn,
   });
+
+  /// Original API payload — lets screens reach fields not typed above.
+  final Map<String, dynamic> raw;
 
   final String? uuid;
   final String? name;
@@ -33,6 +37,7 @@ class Service {
   ResourceStatus get parsedStatus => ResourceStatus.parse(status);
 
   factory Service.fromJson(Map<String, dynamic> m) => Service(
+        raw: m,
         uuid: jsonStr(m, 'uuid'),
         name: jsonStr(m, 'name'),
         status: jsonStr(m, 'status'),

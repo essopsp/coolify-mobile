@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/applications/application_detail_screen.dart';
+import '../features/config/app_settings_screen.dart';
 import '../features/databases/database_detail_screen.dart';
 import '../features/deployments/deployment_detail_screen.dart';
 import '../features/deployments/deployments_screen.dart';
@@ -94,6 +95,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/applications/:uuid/settings',
+        builder: (_, state) => AppSettingsScreen(
+          uuid: state.pathParameters['uuid']!,
+        ),
+      ),
+      GoRoute(
         path: '/databases/:uuid',
         builder: (_, state) => DatabaseDetailScreen(
           uuid: state.pathParameters['uuid']!,
@@ -102,6 +109,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/services/:uuid',
         builder: (_, state) => ServiceDetailScreen(
+          uuid: state.pathParameters['uuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/services/:uuid/settings',
+        builder: (_, state) => ServiceSettingsScreen(
           uuid: state.pathParameters['uuid']!,
         ),
       ),

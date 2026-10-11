@@ -8,6 +8,37 @@ import '../../core/models/service.dart';
 import '../../core/models/tag.dart';
 import '../../core/providers.dart';
 
+/// Key for the container log providers. `lines`/`timestamps` are part of the
+/// identity so changing them in the log viewer triggers a refetch.
+class LogQuery {
+  const LogQuery({
+    this.uuid = '',
+    this.lines = 200,
+    this.timestamps = false,
+    this.service,
+  });
+
+  final String uuid;
+  final int lines;
+  final bool timestamps;
+  final String? service;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LogQuery &&
+      other.uuid == uuid &&
+      other.lines == lines &&
+      other.timestamps == timestamps &&
+      other.service == service;
+
+  @override
+  int get hashCode => Object.hash(uuid, lines, timestamps, service);
+}
+
+/// Convenience for the app/database log tabs.
+LogQuery logQuery(String uuid, {String? service}) =>
+    LogQuery(uuid: uuid, service: service);
+
 // ── Applications ─────────────────────────────────────────────────────────────
 final applicationProvider =
     FutureProvider.family<Application, String>((ref, uuid) {
@@ -20,10 +51,12 @@ final appEnvVarsProvider =
     });
 
 final appLogsProvider =
-    FutureProvider.autoDispose.family<String, ({String uuid, String? service})>(
-      (ref, args) => ref
+    FutureProvider.autoDispose.family<String, LogQuery>(
+      (ref, q) => ref
           .watch(apiProvider)
-          .logs('application', args.uuid, serviceName: args.service),
+          .logs('application', q.uuid,
+              lines: q.lines, timestamps: q.timestamps,
+              serviceName: q.service),
     );
 
 final appTasksProvider =
@@ -56,8 +89,10 @@ final dbEnvVarsProvider =
       return ref.watch(apiProvider).envVars('database', uuid);
     });
 
-final dbLogsProvider = FutureProvider.autoDispose.family<String, String>(
-  (ref, uuid) => ref.watch(apiProvider).logs('database', uuid),
+final dbLogsProvider = FutureProvider.autoDispose.family<String, LogQuery>(
+  (ref, q) => ref
+      .watch(apiProvider)
+      .logs('database', q.uuid, lines: q.lines, timestamps: q.timestamps),
 );
 
 final dbBackupsProvider =
@@ -87,16 +122,25 @@ final serviceDbsProvider =
       return ref.watch(apiProvider).serviceDatabases(uuid);
     });
 
+final serviceContainerLogsProvider =
+    FutureProvider.autoDispose.family<String, LogQuery>(
+      (ref, q) => ref
+          .watch(apiProvider)
+          .logs('service', q.uuid, lines: q.lines, timestamps: q.timestamps),
+    );
+
 final serviceLogsProvider =
-    FutureProvider.autoDispose.family<String, ({String uuid, String app})>(
-      (ref, args) =>
-          ref.watch(apiProvider).serviceAppLogs(args.uuid, args.app),
+    FutureProvider.autoDispose.family<String, ({String uuid, String app, int lines, bool timestamps})>(
+      (ref, args) => ref.watch(apiProvider).serviceAppLogs(
+          args.uuid, args.app,
+          lines: args.lines, timestamps: args.timestamps),
     );
 
 final serviceDbLogsProvider =
-    FutureProvider.autoDispose.family<String, ({String uuid, String db})>(
-      (ref, args) =>
-          ref.watch(apiProvider).serviceDbLogs(args.uuid, args.db),
+    FutureProvider.autoDispose.family<String, ({String uuid, String db, int lines, bool timestamps})>(
+      (ref, args) => ref.watch(apiProvider).serviceDbLogs(
+          args.uuid, args.db,
+          lines: args.lines, timestamps: args.timestamps),
     );
 
 // ── Servers ──────────────────────────────────────────────────────────────────

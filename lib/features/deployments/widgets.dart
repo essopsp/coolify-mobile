@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models/deployment.dart';
 import '../../core/utils/format.dart';
 import '../../core/utils/status.dart';
+import '../../shared/widgets/log_viewer.dart';
 
 class DeploymentTile extends StatelessWidget {
   const DeploymentTile({super.key, required this.deployment, this.onTap});
@@ -86,19 +87,10 @@ class DeploymentLogView extends StatelessWidget {
         ),
       );
     }
-    return SelectionArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(14),
-        child: SelectableText(
-          logs,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-            height: 1.4,
-            color: Color(0xFFD8E1EC),
-          ),
-        ),
-      ),
+    return LogViewer(
+      logs: logs,
+      emptyLabel: 'No log output yet.',
+      embeddedHeight: 420,
     );
   }
 }

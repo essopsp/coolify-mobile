@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/models/app_config.dart';
 import '../../core/models/github_app.dart';
 import '../../core/models/resource.dart';
 import '../../core/models/server.dart';
@@ -10,11 +11,10 @@ import '../../core/models/service_template.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/async_view.dart';
 import '../../shared/widgets/sections.dart';
+import '../config/config_form.dart';
 import '../projects/projects_provider.dart';
 import '../resources/resources_provider.dart';
 import 'create_provider.dart';
-
-const _buildPacks = ['nixpacks', 'railpack', 'static', 'dockerfile', 'dockercompose'];
 
 class CreateResourceScreen extends ConsumerStatefulWidget {
   const CreateResourceScreen({super.key});
@@ -504,11 +504,14 @@ class _RepoCreateSheet extends ConsumerStatefulWidget {
 }
 
 class _RepoCreateSheetState extends ConsumerState<_RepoCreateSheet> {
+  final _configKey = GlobalKey<ConfigFormState>();
   late final TextEditingController _name;
   String _branch = '';
   String _buildPack = 'nixpacks';
   bool _instant = true;
   bool _busy = false;
+  bool _advancedConfig = false;
+  AppConfig _config = const AppConfig();
 
   @override
   void initState() {
@@ -583,7 +586,7 @@ class _RepoCreateSheetState extends ConsumerState<_RepoCreateSheet> {
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Build pack', isDense: true),
               items: [
-                for (final b in _buildPacks)
+                for (final b in kBuildPacks)
                   DropdownMenuItem(value: b, child: Text(b)),
               ],
               onChanged: (v) => setState(() => _buildPack = v ?? _buildPack),
@@ -594,6 +597,26 @@ class _RepoCreateSheetState extends ConsumerState<_RepoCreateSheet> {
               value: _instant,
               onChanged: (v) => setState(() => _instant = v),
             ),
+            const SizedBox(height: 4),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Advanced configuration'),
+              subtitle: const Text(
+                  'Domains, ports, healthcheck, Dockerfile',
+                  style: TextStyle(fontSize: 12)),
+              value: _advancedConfig,
+              onChanged: (v) => setState(() => _advancedConfig = v),
+            ),
+            if (_advancedConfig) ...[
+              const SizedBox(height: 8),
+              ConfigForm(
+                key: _configKey,
+                initial: _config,
+                buildPack: _buildPack,
+                showBasics: false,
+                onChanged: (c) => _config = c,
+              ),
+            ],
             const SizedBox(height: 8),
             _busy
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -627,6 +650,7 @@ class _RepoCreateSheetState extends ConsumerState<_RepoCreateSheet> {
         buildPack: _buildPack,
         name: _name.text.trim().isEmpty ? null : _name.text.trim(),
         instantDeploy: _instant,
+        config: _advancedConfig ? _config : null,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -664,9 +688,12 @@ class _ServiceCreateSheet extends ConsumerStatefulWidget {
 }
 
 class _ServiceCreateSheetState extends ConsumerState<_ServiceCreateSheet> {
+  final _composeKey = GlobalKey<ServiceConfigFormState>();
   late final TextEditingController _name;
   bool _instant = true;
   bool _busy = false;
+  bool _customCompose = false;
+  ServiceConfig _config = ServiceConfig.empty;
 
   @override
   void initState() {
@@ -707,6 +734,23 @@ class _ServiceCreateSheetState extends ConsumerState<_ServiceCreateSheet> {
               value: _instant,
               onChanged: (v) => setState(() => _instant = v),
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Customize docker-compose'),
+              subtitle: const Text(
+                  'Edit the generated compose before creating',
+                  style: TextStyle(fontSize: 12)),
+              value: _customCompose,
+              onChanged: (v) => setState(() => _customCompose = v),
+            ),
+            if (_customCompose) ...[
+              const SizedBox(height: 8),
+              ServiceConfigForm(
+                key: _composeKey,
+                initial: _config,
+                onChanged: (c) => _config = c,
+              ),
+            ],
             const SizedBox(height: 8),
             _busy
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -732,6 +776,7 @@ class _ServiceCreateSheetState extends ConsumerState<_ServiceCreateSheet> {
         serverUuid: widget.serverUuid,
         name: _name.text.trim().isEmpty ? null : _name.text.trim(),
         instantDeploy: _instant,
+        config: _customCompose ? _config : null,
       );
       if (!mounted) return;
       Navigator.of(context).pop();

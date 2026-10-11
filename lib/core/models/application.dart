@@ -3,6 +3,7 @@ import '../utils/status.dart';
 
 class Application {
   const Application({
+    this.raw = const {},
     this.uuid,
     this.name,
     this.fqdn,
@@ -37,6 +38,9 @@ class Application {
     this.isStatic,
     this.isSpa,
   });
+
+  /// Original API payload — lets screens reach fields not typed above.
+  final Map<String, dynamic> raw;
 
   final String? uuid;
   final String? name;
@@ -85,6 +89,7 @@ class Application {
   }
 
   factory Application.fromJson(Map<String, dynamic> m) => Application(
+        raw: m,
         uuid: jsonStr(m, 'uuid'),
         name: jsonStr(m, 'name'),
         fqdn: jsonStr(m, 'fqdn'),
