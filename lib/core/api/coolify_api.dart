@@ -62,9 +62,18 @@ class CoolifyApi {
           .toList();
     } on ApiException catch (e) {
       if (e.kind == ApiErrorKind.notFound) {
+        // Only older Coolify builds lack the route; on current versions a
+        // missing permission shows up as 403 and falls through untouched.
         throw const ApiException(
           ApiErrorKind.notFound,
           'This Coolify version does not expose audit events via the public API (v1).',
+        );
+      }
+      if (e.kind == ApiErrorKind.forbidden) {
+        throw const ApiException(
+          ApiErrorKind.forbidden,
+          'Audit events require a token owned by a team administrator or owner. '
+          'read:sensitive or root additionally returns actor email, IP, user agent and change sets.',
         );
       }
       rethrow;

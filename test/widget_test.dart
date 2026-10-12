@@ -133,5 +133,15 @@ void main() {
       final ex = ApiException.fromStatus(429, '');
       expect(ex.message, contains('Rate limit'));
     });
+
+    test('audit 403 hint explains the team-owner requirement', () async {
+      // A Coolify instance returns 401 (not 404) for an unknown route, so a 404
+      // here really does mean an older build without /audit-events.
+      expect(ApiException.fromStatus(404, '').kind, ApiErrorKind.notFound);
+      expect(ApiException.fromStatus(401, '').kind,
+          ApiErrorKind.unauthenticated);
+      // 403 is what a correctly-routed but under-permissioned token receives.
+      expect(ApiException.fromStatus(403, '').kind, ApiErrorKind.forbidden);
+    });
   });
 }
