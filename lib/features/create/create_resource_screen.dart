@@ -11,6 +11,7 @@ import '../../core/models/service_template.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/async_view.dart';
 import '../../shared/widgets/sections.dart';
+import '../../shared/widgets/service_logo.dart';
 import '../config/config_form.dart';
 import '../projects/projects_provider.dart';
 import '../resources/resources_provider.dart';
@@ -228,23 +229,43 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
     );
   }
 
+  /// Prefers a system-wide app: it has installation credentials and therefore
+  /// exposes every repository rather than only public ones.
+  GithubApp? _preferredApp(List<GithubApp> apps) {
+    if (apps.isEmpty) return null;
+    for (final a in apps) {
+      if (a.isSystemWide == true) return a;
+    }
+    return apps.first;
+  }
+
   // ── GitHub tab ─────────────────────────────────────────────────────────────
   Widget _githubTab(AsyncValue<List<GithubApp>> ghApps) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ghApps.when(
-          data: (apps) {
-            if (_ghAppUuid.isEmpty && apps.isNotEmpty) _ghAppUuid = apps.first.uuid!;
+          data: (allApps) {
+            // "Public GitHub" has no installation credentials — listing repos
+            // through it always fails — so only offer usable apps.
+            final apps = allApps.where((a) => a.isPublic != true).toList();
+            if (!apps.any((a) => a.uuid == _ghAppUuid)) {
+              _ghAppUuid = _preferredApp(apps)?.uuid ?? '';
+            }
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _label('GitHub app'),
-                  if (apps.isEmpty)
+                  if (allApps.isEmpty)
                     const Text(
                       'No GitHub Apps connected to this Coolify instance. Add one in the Coolify dashboard first.',
+                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                    )
+                  else if (apps.isEmpty)
+                    const Text(
+                      'Only the public GitHub source is connected. Add a GitHub App with installation access in Coolify to browse repositories.',
                       style: TextStyle(fontSize: 12, color: Colors.white54),
                     )
                   else
@@ -256,7 +277,14 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
                         for (final a in apps)
                           DropdownMenuItem(
                             value: a.uuid!,
-                            child: Text(a.name ?? '(unnamed)'),
+                            child: Text(
+                              [
+                                a.name ?? '(unnamed)',
+                                if (a.isSystemWide == true) 'system-wide',
+                              ].join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                       onChanged: (v) => setState(() {
@@ -385,8 +413,7 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
   Widget _serviceList() {
     final filtered = ServiceTemplate.catalog.where((t) {
       if (_serviceQuery.isEmpty) return true;
-      return t.type.contains(_serviceQuery) ||
-          t.slogan.toLowerCase().contains(_serviceQuery);
+      return t.searchKey.contains(_serviceQuery);
     }).toList();
     if (filtered.isEmpty) {
       return const EmptyState(
@@ -404,7 +431,7 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
         final t = filtered[i];
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.widgets_outlined),
+            leading: ServiceLogo(asset: t.logoAsset, size: 30),
             title: Text(t.type,
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: t.slogan.isEmpty
@@ -717,7 +744,18 @@ class _ServiceCreateSheetState extends ConsumerState<_ServiceCreateSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.template.type, style: Theme.of(context).textTheme.titleLarge),
+            Row(
+              children: [
+                ServiceLogo(asset: widget.template.logoAsset, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(widget.template.type,
+                      style: Theme.of(context).textTheme.titleLarge,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
             if (widget.template.slogan.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(widget.template.slogan,
