@@ -1,50 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Renders a one-click service logo.
+/// Lazily renders a one-click service logo from the network.
 ///
-/// Handles both raster (png/jpg/webp) and vector (svg) assets, falling back to
-/// a neutral glyph when the asset is missing or fails to decode — some upstream
-/// catalogue entries have no logo at all.
+/// Logos are never bundled — they are fetched on demand from the Coolify
+/// catalogue and served through Flutter's image caches (memory + disk), so
+/// scrolling the list only pays for what is actually visible.
+///
+/// Handles both raster (png/jpg/webp) and vector (svg) sources, and degrades
+/// to a neutral glyph when a logo is missing or fails to load.
 class ServiceLogo extends StatelessWidget {
   const ServiceLogo({
     super.key,
-    required this.asset,
+    required this.url,
     this.size = 28,
     this.fallbackIcon = Icons.widgets_outlined,
   });
 
-  final String? asset;
+  final String? url;
   final double size;
   final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
-    final path = asset;
-    if (path == null || path.isEmpty) return _fallback();
-    if (path.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.asset(
-        path,
+    final u = url;
+    if (u == null || u.isEmpty) return _fallback();
+
+    // A subtle placeholder box keeps list rows from resizing as images arrive.
+    if (u.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.network(
+        u,
         width: size,
         height: size,
-        // Some catalogue SVGs have no explicit viewBox; fit them into a box.
         fit: BoxFit.contain,
-        placeholderBuilder: (_) => _fallback(),
+        placeholderBuilder: _placeholder,
+        errorBuilder: (context, error, stack) => _fallback(),
       );
     }
-    return Image.asset(
-      path,
+    return Image.network(
+      u,
       width: size,
       height: size,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
-      errorBuilder: (_, _, _) => _fallback(),
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, progress) =>
+          progress == null ? child : _placeholderBox(),
+      errorBuilder: (context, error, stack) => _fallback(),
     );
   }
 
-  Widget _fallback() => Icon(
-        fallbackIcon,
-        size: size,
-        color: Colors.white38,
+  Widget _placeholder(BuildContext context) => _placeholderBox();
+
+  Widget _placeholderBox() => SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: SizedBox(
+            width: size * 0.5,
+            height: size * 0.5,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              color: Colors.white.withValues(alpha: 0.22),
+            ),
+          ),
+        ),
       );
+
+  Widget _fallback() => Icon(fallbackIcon, size: size, color: Colors.white38);
 }

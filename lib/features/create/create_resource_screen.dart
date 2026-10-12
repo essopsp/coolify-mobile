@@ -431,7 +431,7 @@ class _CreateResourceScreenState extends ConsumerState<CreateResourceScreen> {
         final t = filtered[i];
         return Card(
           child: ListTile(
-            leading: ServiceLogo(asset: t.logoAsset, size: 30),
+            leading: ServiceLogo(url: t.logoUrl, size: 30),
             title: Text(t.type,
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: t.slogan.isEmpty
@@ -746,7 +746,7 @@ class _ServiceCreateSheetState extends ConsumerState<_ServiceCreateSheet> {
           children: [
             Row(
               children: [
-                ServiceLogo(asset: widget.template.logoAsset, size: 32),
+                ServiceLogo(url: widget.template.logoUrl, size: 32),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(widget.template.type,
